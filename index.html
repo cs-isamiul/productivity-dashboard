@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.0.1/dist/gridstack.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav id="toolbar">
+        <div class="nav-group tabs" id="screen-tabs">
+            </div>
+
+        <div class="nav-group controls">
+            <select id="add-widget-select">
+                <option value="" disabled selected>+ Add Widget</option>
+                <option value="clock">Clock</option>
+                <option value="stopwatch">Stopwatch</option>
+                <option value="timer">Timer</option>
+                <option value="music">Music Player</option>
+            </select>
+            
+            <button id="btn-stop-audio" class="btn warning">Stop All Audio</button>
+            <button id="btn-edit-mode" class="btn toggle">Edit Mode: OFF</button>
+            
+            <div class="grid-controls">
+                <label for="grid-cols">Grid Size:</label>
+                <input type="number" id="grid-cols" min="2" max="50" value="12">
+            </div>
+
+            <button id="btn-export" class="btn">Export</button>
+        </div>
+    </nav>
+
+    <main id="workspace">
+        </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10.0.1/dist/gridstack-all.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
