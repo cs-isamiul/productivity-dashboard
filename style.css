@@ -108,7 +108,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
 }
 
 /* --- WIDGET INTERNAL STYLES --- */
@@ -137,4 +136,43 @@ body {
     width: 60px;
     text-align: center;
     font-size: 1.2rem;
+}
+
+/* --- VOLUME CONTROL COMPONENT --- */
+.volume-control-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.volume-slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    position: absolute;
+    bottom: 110%; /* Pops up above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 10;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease 0.1s, visibility 0s 1.3s;
+}
+
+.volume-control-wrapper:hover .volume-slider-container {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease 0s, visibility 0s 0s;
+}
+
+.volume-slider {
+    width: 80px;
+    cursor: pointer;
 }

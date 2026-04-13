@@ -6,6 +6,7 @@ const DEFAULT_COLS = 12;
 let currentScreenIndex = 0;
 let grids = []; // Will hold the Gridstack instances
 let screenNames = ["Screen 1", "Screen 2", "Screen 3"];
+let originalPageTitle = document.title;
 
 // --- INITIALIZATION ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -94,6 +95,17 @@ function setupEventListeners() {
         });
     });
 
+    // Gravity Toggle (float mode)
+    const gravityBtn = document.getElementById("btn-gravity");
+    let isGravityOn = true; // Gravity ON means float is false
+    
+    gravityBtn.addEventListener("click", () => {
+        isGravityOn = !isGravityOn;
+        gravityBtn.innerText = `Gravity: ${isGravityOn ? "ON" : "OFF"}`;
+        
+        grids.forEach(grid => grid.float(!isGravityOn));
+    });
+
     // Add Widget Dropdown
     const addWidgetSelect = document.getElementById("add-widget-select");
     addWidgetSelect.addEventListener("change", (e) => {
@@ -115,6 +127,13 @@ function setupEventListeners() {
         // TODO: Implement the check to ensure no widget is wider than newCols
         // If check passes: grids.forEach(g => g.column(newCols));
         // If check fails: alert user
+    });
+
+    // Global Page Visibility (Reset Tab Title)
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && document.title === "🔔 TIMER COMPLETE") {
+            document.title = originalPageTitle;
+        }
     });
 }
 
@@ -154,6 +173,7 @@ function addWidgetToCurrentScreen(type) {
                     <div class="widget-controls">
                         <button class="btn btn-start">Start</button>
                         <button class="btn btn-reset">Reset</button>
+                        <div class="volume-container"></div>
                     </div>
                 </div>`;
             w = 3; h = 2;
@@ -176,6 +196,30 @@ function addWidgetToCurrentScreen(type) {
 // ==========================================
 // --- WIDGET LOGIC (Treated as sub-modules) ---
 // ==========================================
+
+// --- REUSABLE VOLUME COMPONENT ---
+function initVolumeControl(containerEl, audioObj) {
+    containerEl.innerHTML = `
+        <div class="volume-control-wrapper">
+            <button class="btn btn-volume">🔊</button>
+            <div class="volume-slider-container">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="1">
+                <button class="btn btn-preview">Preview</button>
+            </div>
+        </div>
+    `;
+    
+    const slider = containerEl.querySelector(".volume-slider");
+    const previewBtn = containerEl.querySelector(".btn-preview");
+
+    slider.addEventListener("input", (e) => {
+        audioObj.volume = e.target.value;
+    });
+    previewBtn.addEventListener("click", () => {
+        audioObj.currentTime = 0;
+        audioObj.play();
+    });
+}
 
 // --- CLOCK LOGIC ---
 function initClock(widgetEl) {
@@ -244,12 +288,25 @@ function initTimer(widgetEl) {
     
     let interval;
     let remainingSeconds = 0;
+    let initialSeconds = 0;
     let isRunning = false;
+    
+    // Setup Audio & Volume Control
+    const alarmAudio = new Audio('https://www.myinstants.com/media/sounds/taco-bell-bong-sfx.mp3');
+    initVolumeControl(widgetEl.querySelector('.volume-container'), alarmAudio);
 
     function updateDisplay() {
         const mins = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
         const secs = (remainingSeconds % 60).toString().padStart(2, '0');
         display.innerText = `${mins}:${secs}`;
+    }
+    
+    function stopAudio() {
+        alarmAudio.pause();
+        alarmAudio.currentTime = 0;
+        if (document.title === "🔔 TIMER COMPLETE") {
+            document.title = originalPageTitle;
+        }
     }
 
     startBtn.addEventListener("click", () => {
@@ -258,16 +315,24 @@ function initTimer(widgetEl) {
             startBtn.innerText = "Resume";
             isRunning = false;
         } else {
+            stopAudio();
+
             // If starting from fresh setup
             if (setupDiv.style.display !== "none") {
                 const mins = parseInt(minInput.value) || 0;
                 const secs = parseInt(secInput.value) || 0;
                 remainingSeconds = (mins * 60) + secs;
+                initialSeconds = remainingSeconds;
                 
                 if (remainingSeconds === 0) return; // Don't start if 0
                 
                 setupDiv.style.display = "none";
                 display.style.display = "block";
+            } else if (remainingSeconds === 0 && initialSeconds > 0) {
+                // Restarting a finished timer
+                remainingSeconds = initialSeconds;
+                display.style.display = "block";
+                updateDisplay();
             }
 
             interval = setInterval(() => {
@@ -276,9 +341,16 @@ function initTimer(widgetEl) {
                     updateDisplay();
                 } else {
                     clearInterval(interval);
-                    startBtn.innerText = "Start";
+                    startBtn.innerText = "Restart";
                     isRunning = false;
                     display.innerText = "DONE!";
+                    
+                    // Play Audio & Trigger Tab Notification
+                    alarmAudio.currentTime = 0;
+                    alarmAudio.play();
+                    if (document.hidden) {
+                        document.title = "🔔 TIMER COMPLETE";
+                    }
                 }
             }, 1000);
             
@@ -291,6 +363,9 @@ function initTimer(widgetEl) {
         clearInterval(interval);
         isRunning = false;
         remainingSeconds = 0;
+        initialSeconds = 0;
+        
+        stopAudio();
         
         setupDiv.style.display = "";
         display.style.display = "none";
