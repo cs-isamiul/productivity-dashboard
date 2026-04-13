@@ -292,7 +292,7 @@ function initTimer(widgetEl) {
         isRunning = false;
         remainingSeconds = 0;
         
-        setupDiv.style.display = "block";
+        setupDiv.style.display = "";
         display.style.display = "none";
         startBtn.innerText = "Start";
         
