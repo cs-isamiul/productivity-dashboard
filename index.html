@@ -41,6 +41,36 @@
     <main id="workspace">
         </main>
 
+    <!-- GLOBAL SETTINGS MODAL -->
+    <div id="audio-settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Audio Settings</h2>
+                <button id="btn-close-modal" class="btn">X</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                <div class="form-group">
+                    <label>Audio URL:</label>
+                    <input type="text" id="modal-audio-url" class="btn" style="text-align: left; cursor: text;" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Or Local File:</label>
+                    <input type="file" id="modal-audio-file" accept="audio/*" class="btn">
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Start (sec):</label><input type="number" id="modal-audio-start" min="0" value="0"></div>
+                    <div class="form-group"><label>End (sec, 0=Full):</label><input type="number" id="modal-audio-end" min="0" value="0"></div>
+                </div>
+                <div class="form-group"><label>Total Loop Duration (sec, 0=Play Once):</label><input type="number" id="modal-audio-duration" min="0" value="0"></div>
+                <div class="form-row" style="margin-top: 5px;">
+                    <button id="btn-modal-preview" class="btn">Preview</button>
+                    <button id="btn-modal-stop" class="btn warning">Stop</button>
+                </div>
+                <button id="btn-modal-save" class="btn active" style="background: var(--accent-color); color: white; margin-top: 10px;">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/gridstack@10.0.1/dist/gridstack-all.js"></script>
     <script src="script.js"></script>
 </body>

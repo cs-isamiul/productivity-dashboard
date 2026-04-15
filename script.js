@@ -171,6 +171,7 @@ function addWidgetToCurrentScreen(type) {
                     </div>
                     <div class="time-display" style="display: none;">00:00</div>
                     <div class="widget-controls">
+                        <button class="btn btn-settings" title="Audio Settings">⚙️</button>
                         <button class="btn btn-start">Start</button>
                         <button class="btn btn-reset">Reset</button>
                         <div class="volume-container"></div>
@@ -290,8 +291,13 @@ function initTimer(widgetEl) {
     let remainingSeconds = 0;
     let initialSeconds = 0;
     let isRunning = false;
+    let playInterval = null;
     
     // Setup Audio & Volume Control
+    let audioConfig = { 
+        src: 'https://www.myinstants.com/media/sounds/taco-bell-bong-sfx.mp3', 
+        start: 0, end: 0, duration: 0 
+    };
     const alarmAudio = new Audio('https://www.myinstants.com/media/sounds/taco-bell-bong-sfx.mp3');
     initVolumeControl(widgetEl.querySelector('.volume-container'), alarmAudio);
 
@@ -302,12 +308,23 @@ function initTimer(widgetEl) {
     }
     
     function stopAudio() {
+        if (playInterval) clearInterval(playInterval);
         alarmAudio.pause();
         alarmAudio.currentTime = 0;
         if (document.title === "🔔 TIMER COMPLETE") {
             document.title = originalPageTitle;
         }
     }
+
+    // Open Audio Settings Modal
+    widgetEl.querySelector(".btn-settings").addEventListener("click", () => {
+        openAudioModal(audioConfig, (newConfig) => {
+            audioConfig = newConfig;
+            if (audioConfig.src && audioConfig.src !== alarmAudio.src) {
+                alarmAudio.src = audioConfig.src;
+            }
+        });
+    });
 
     startBtn.addEventListener("click", () => {
         if (isRunning) {
@@ -346,8 +363,7 @@ function initTimer(widgetEl) {
                     display.innerText = "DONE!";
                     
                     // Play Audio & Trigger Tab Notification
-                    alarmAudio.currentTime = 0;
-                    alarmAudio.play();
+                    playInterval = playCustomAudio(alarmAudio, audioConfig);
                     if (document.hidden) {
                         document.title = "🔔 TIMER COMPLETE";
                     }
@@ -374,4 +390,93 @@ function initTimer(widgetEl) {
         minInput.value = "";
         secInput.value = "";
     });
+}
+
+// ==========================================
+// --- GLOBAL AUDIO MODAL COMPONENT ---
+// ==========================================
+
+const audioModal = document.getElementById("audio-settings-modal");
+let onSaveModalCallback = null;
+let previewAudio = new Audio();
+let previewInterval = null;
+
+function openAudioModal(currentConfig, onSave) {
+    document.getElementById("modal-audio-url").value = currentConfig.src.startsWith('blob:') ? '' : currentConfig.src;
+    document.getElementById("modal-audio-file").value = ""; 
+    document.getElementById("modal-audio-start").value = currentConfig.start;
+    document.getElementById("modal-audio-end").value = currentConfig.end;
+    document.getElementById("modal-audio-duration").value = currentConfig.duration;
+    
+    audioModal.style.display = "flex";
+    onSaveModalCallback = onSave;
+}
+
+function closeAudioModal() {
+    audioModal.style.display = "none";
+    stopModalPreview();
+    onSaveModalCallback = null;
+}
+
+function stopModalPreview() {
+    if (previewInterval) clearInterval(previewInterval);
+    previewAudio.pause();
+}
+
+document.getElementById("btn-close-modal").addEventListener("click", closeAudioModal);
+
+document.getElementById("btn-modal-save").addEventListener("click", () => {
+    if (onSaveModalCallback) {
+        const urlVal = document.getElementById("modal-audio-url").value;
+        const fileInput = document.getElementById("modal-audio-file");
+        let finalSrc = urlVal;
+        
+        if (fileInput.files.length > 0) {
+            finalSrc = URL.createObjectURL(fileInput.files[0]);
+        }
+        
+        onSaveModalCallback({
+            src: finalSrc,
+            start: parseFloat(document.getElementById("modal-audio-start").value) || 0,
+            end: parseFloat(document.getElementById("modal-audio-end").value) || 0,
+            duration: parseFloat(document.getElementById("modal-audio-duration").value) || 0
+        });
+    }
+    closeAudioModal();
+});
+
+document.getElementById("btn-modal-preview").addEventListener("click", () => {
+    document.getElementById("btn-modal-save").click(); // Save config first to memory
+    if (onSaveModalCallback) {
+        const tempConfig = {
+            start: parseFloat(document.getElementById("modal-audio-start").value) || 0,
+            end: parseFloat(document.getElementById("modal-audio-end").value) || 0,
+            duration: parseFloat(document.getElementById("modal-audio-duration").value) || 0
+        };
+        stopModalPreview();
+        previewAudio.src = previewAudio.src || "https://www.myinstants.com/media/sounds/taco-bell-bong-sfx.mp3"; 
+        previewInterval = playCustomAudio(previewAudio, tempConfig);
+    }
+});
+document.getElementById("btn-modal-stop").addEventListener("click", stopModalPreview);
+
+// Custom Play Logic handling trims & durations
+function playCustomAudio(audioObj, config) {
+    audioObj.currentTime = config.start;
+    audioObj.play().catch(e => console.warn("Audio blocked:", e));
+    const startTime = Date.now();
+    
+    return setInterval(() => {
+        const actualEnd = config.end > 0 ? config.end : (audioObj.duration || Infinity);
+        
+        if (audioObj.currentTime >= actualEnd) {
+            if (config.duration > 0) audioObj.currentTime = config.start; // Loop back
+            else { audioObj.pause(); clearInterval(this); }
+        }
+        
+        // Global max duration
+        if (config.duration > 0 && (Date.now() - startTime) / 1000 >= config.duration) {
+            audioObj.pause(); clearInterval(this);
+        }
+    }, 50);
 }
